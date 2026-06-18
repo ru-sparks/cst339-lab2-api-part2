@@ -1,10 +1,10 @@
-package com.sparkco.lab2_part2_entity_generator;
+package com.sparkco.generate_entities;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class Lab2Part2EntityGeneratorApplicationTests {
+class GenerateEntitiesApplicationTests {
 
 	@Test
 	void contextLoads() {
