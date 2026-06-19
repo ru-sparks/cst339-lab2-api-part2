@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Value;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -25,6 +26,15 @@ public class EntityGeneratorRunner implements CommandLineRunner {
     private static final Logger logger = LoggerFactory.getLogger(EntityGeneratorRunner.class);
     private final DataSource dataSource;
 
+    @Value("${entity.generator.enabled:true}")
+    private boolean generatorEnabled;
+
+    @Value("${entity.generator.package:com.sparkco.generate_entities.generated}")
+    private String generatorPackage;
+
+    @Value("${entity.generator.output-dir:src/main/java}")
+    private String generatorOutputDir;
+
     public EntityGeneratorRunner(DataSource dataSource) {
         this.dataSource = dataSource;
     }
@@ -34,6 +44,22 @@ public class EntityGeneratorRunner implements CommandLineRunner {
         Connection connection = DataSourceUtils.getConnection(dataSource);
         try {
             logDatabaseMetadata(connection);
+            if (generatorEnabled) {
+                try {
+                    var metadata = connection.getMetaData();
+                    String catalog = connection.getCatalog();
+                    String schema = connection.getSchema();
+                    java.nio.file.Path out = java.nio.file.Path.of(generatorOutputDir);
+                    new com.sparkco.generate_entities.generator.EntityGenerator()
+                            .generateEntities(metadata, catalog, schema != null && !schema.isBlank() ? schema : null,
+                                    out, generatorPackage);
+                    logger.info("Entity generation completed (outputDir={})", generatorOutputDir);
+                } catch (Exception ex) {
+                    logger.error("Entity generation failed", ex);
+                }
+            } else {
+                logger.info("Entity generation is disabled (set entity.generator.enabled=true to enable)");
+            }
         } catch (SQLException ex) {
             logger.error("Unable to read database metadata", ex);
         } finally {
